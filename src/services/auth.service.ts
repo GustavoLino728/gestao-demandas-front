@@ -1,15 +1,10 @@
-import axios from 'axios'
 import type {
   LoginRequest,
   TokenResponse,
   AccessTokenResponse,
   RefreshRequest,
 } from '@/types/auth.types'
-
-const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api/v1`,
-  headers: { 'Content-Type': 'application/json' },
-})
+import { api } from '@/lib/api'
 
 export const authService = {
   login: async (data: LoginRequest): Promise<TokenResponse> => {
