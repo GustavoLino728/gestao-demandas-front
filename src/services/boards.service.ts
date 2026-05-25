@@ -80,3 +80,48 @@ export async function createBoard(
 
   return result as CreateBoardResponse
 }
+
+export interface UpdateBoardPayload {
+  name?: string
+  description?: string | null
+}
+
+export async function updateBoard(
+  boardId: string,
+  payload: UpdateBoardPayload,
+  accessToken: string
+): Promise<CreateBoardResponse> {
+  const response = await fetch(`${API_URL}/api/v1/boards/${boardId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const result = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(result?.message || result?.detail || 'Não foi possível atualizar o board.')
+  }
+
+  return result as CreateBoardResponse
+}
+
+export async function deleteBoard(
+  boardId: string,
+  accessToken: string
+): Promise<void> {
+  const response = await fetch(`${API_URL}/api/v1/boards/${boardId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null)
+    throw new Error(result?.message || result?.detail || 'Não foi possível excluir o board.')
+  }
+}

@@ -8,8 +8,8 @@ import {
   Filter,
   Plus,
   FolderKanban,
-  ArrowUpRight,
   KanbanSquare,
+  ArrowUpRight
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { useBoards } from '@/hooks/useBoards'
 import { BoardListItem, BoardStatus } from '@/types/board.types'
 import { CreateBoardDialog } from '@/components/boards/CreateBoardDialog'
+import { BoardCard } from '@/components/boards/BoardCard'
 
 const statusLabel: Record<BoardStatus, string> = {
   active: 'Ativo',
@@ -179,56 +180,6 @@ export default function BoardsPage() {
         )}
       </div>
     </div>
-  )
-}
-
-function BoardCard({ board }: { board: BoardListItem }) {
-  return (
-    <Link
-      href={`/boards/${board.id}`}
-      className="group rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className={`rounded-full ${statusClasses[board.status]}`}
-            >
-              {statusLabel[board.status]}
-            </Badge>
-
-            {board.sector && (
-              <span className="truncate text-xs font-medium text-zinc-500">
-                {board.sector}
-              </span>
-            )}
-          </div>
-
-          <h2 className="truncate text-lg font-semibold text-zinc-900">
-            {board.name}
-          </h2>
-
-          <p className="mt-1 line-clamp-2 text-sm text-zinc-500">
-            {board.description || 'Sem descrição informada.'}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-zinc-100 p-2 text-zinc-500 transition-colors group-hover:bg-red-50 group-hover:text-red-600">
-          <ArrowUpRight className="h-4 w-4" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <InfoMiniCard label="Colunas" value={board.columns_count} />
-        <InfoMiniCard label="Cards" value={board.cards_count} />
-      </div>
-
-      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-4 text-xs text-zinc-500">
-        <span>Criado em {formatDate(board.created_at)}</span>
-        <span>Atualizado em {formatDate(board.updated_at)}</span>
-      </div>
-    </Link>
   )
 }
 
