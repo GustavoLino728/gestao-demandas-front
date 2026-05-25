@@ -22,7 +22,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
 
   const justRegistered = searchParams.get('registered') === 'true'
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const callbackUrl = searchParams.get('callbackUrl') || '/boards'
 
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
