@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useBoards } from '@/hooks/useBoards'
 import { BoardListItem, BoardStatus } from '@/types/board.types'
+import { CreateBoardDialog } from '@/components/boards/CreateBoardDialog'
 
 const statusLabel: Record<BoardStatus, string> = {
   active: 'Ativo',
@@ -31,6 +32,7 @@ const statusClasses: Record<BoardStatus, string> = {
 }
 
 export default function BoardsPage() {
+  const [openCreate, setOpenCreate] = useState(false)
   const [search, setSearch] = useState('')
   const { data: boards = [], isLoading, error } = useBoards()
 
@@ -87,12 +89,17 @@ export default function BoardsPage() {
             </Button>
 
             <Button
-              type="button"
-              className="h-11 rounded-xl bg-red-600 px-4 text-white hover:bg-red-700"
+              onClick={() => setOpenCreate(true)}
+              className="h-11 rounded-xl bg-red-600 text-white hover:bg-red-700"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Novo board
+              + Novo board
             </Button>
+
+            <CreateBoardDialog
+              open={openCreate}
+              onOpenChange={setOpenCreate}
+            />
+    
           </div>
         </div>
       </div>

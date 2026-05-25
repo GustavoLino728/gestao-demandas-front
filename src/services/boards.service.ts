@@ -1,4 +1,4 @@
-import { BoardApiItem, BoardListItem, BoardsApiResponse } from '@/types/board.types'
+import { BoardApiItem, BoardListItem, BoardsApiResponse, CreateBoardPayload, CreateBoardResponse } from '@/types/board.types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '')
 
@@ -23,7 +23,7 @@ function normalizeStatus(status?: string): 'active' | 'archived' | 'draft' {
 }
 
 export async function getBoards(accessToken: string): Promise<BoardListItem[]> {
-  const url = `${API_URL}/api/v1/boards/me`
+  const url = `${API_URL}/api/v1/boards`
   console.log('GET BOARDS URL =>', url)
 
   const response = await fetch(url, {
@@ -53,4 +53,30 @@ export async function getBoards(accessToken: string): Promise<BoardListItem[]> {
   if (Array.isArray(payload.results)) return payload.results.map(normalizeBoard)
 
   return []
+}
+
+export async function createBoard(
+  payload: CreateBoardPayload,
+  accessToken: string
+): Promise<CreateBoardResponse> {
+  const response = await fetch(`${API_URL}/api/v1/boards`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const result = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(
+      result?.message ||
+        result?.detail ||
+        'Não foi possível criar o board.'
+    )
+  }
+
+  return result as CreateBoardResponse
 }
