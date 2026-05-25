@@ -17,7 +17,6 @@ import { Badge } from '@/components/ui/badge'
 import { useCards } from '@/hooks/useCards'
 import { CardListItem, CardPriority } from '@/types/card.types'
 
-// ─── Mapas de label e estilo (mesmo padrão de statusLabel/statusClasses) ──────
 
 const priorityLabel: Record<CardPriority, string> = {
   low: 'Baixa',
@@ -33,7 +32,6 @@ const priorityClasses: Record<CardPriority, string> = {
   urgent: 'border-red-200 bg-red-50 text-red-700',
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CardsPage() {
   const [search, setSearch] = useState('')
@@ -186,7 +184,6 @@ export default function CardsPage() {
   )
 }
 
-// ─── Sub-components locais (mesmo padrão de boards/page.tsx) ──────────────────
 
 function CardItem({ card }: { card: CardListItem }) {
   return (

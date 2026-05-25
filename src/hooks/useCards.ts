@@ -16,7 +16,6 @@ import type {
   CardMovePayload,
 } from '@/types/card.types'
 
-// Hook espelho de useBoards — lista cards do usuário autenticado
 export function useCards() {
   const { data: session } = useSession()
 
@@ -27,7 +26,6 @@ export function useCards() {
   })
 }
 
-// Hook para cards de uma lista específica
 export function useCardsByList(listId: string) {
   const { data: session } = useSession()
 
@@ -38,7 +36,6 @@ export function useCardsByList(listId: string) {
   })
 }
 
-// Mutations
 export function useCreateCard() {
   const { data: session } = useSession()
   const queryClient = useQueryClient()

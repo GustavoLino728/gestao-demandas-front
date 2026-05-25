@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -12,11 +12,12 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { useBoardDetail } from '@/hooks/useBoardDetail'
+import { useCreateCard } from '@/hooks/useCreateCard'
+import { CardDetailsDialog } from '@/components/boards/CardDetailsDialog'
 import { CardListItem, CardPriority } from '@/types/card.types'
 import { KanbanColumn } from '@/types/list.types'
-
-// ─── Mapas de prioridade (mesmo padrão dos outros arquivos) ───────────────────
 
 const priorityLabel: Record<CardPriority, string> = {
   low: 'Baixa',
@@ -32,8 +33,6 @@ const priorityClasses: Record<CardPriority, string> = {
   urgent: 'border-red-200 bg-red-50 text-red-700',
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function BoardDetailPage({
   params,
 }: {
@@ -42,9 +41,16 @@ export default function BoardDetailPage({
   const { boardId } = use(params)
   const { board, columns, isLoading, error } = useBoardDetail(boardId)
 
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [selectedListId, setSelectedListId] = useState<string | null>(null)
+
+  function handleOpenCard(cardId: string, listId: string) {
+    setSelectedCardId(cardId)
+    setSelectedListId(listId)
+  }
+
   return (
     <div className="flex h-screen flex-col bg-[#f7f7f8]">
-      {/* Cabeçalho */}
       <div className="border-b border-zinc-200 bg-white">
         <div className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-4">
@@ -84,24 +90,20 @@ export default function BoardDetailPage({
         </div>
       </div>
 
-      {/* Erro */}
       {error && (
         <div className="mx-6 mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {(error as Error).message}
         </div>
       )}
 
-      {/* Kanban — scroll horizontal */}
       <div className="flex flex-1 gap-4 overflow-x-auto p-6">
         {isLoading ? (
-          // Skeleton das colunas
           <>
             {Array.from({ length: 3 }).map((_, i) => (
               <ColumnSkeleton key={i} />
             ))}
           </>
         ) : columns.length === 0 ? (
-          // Empty state
           <div className="flex flex-1 flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 bg-white py-20">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100">
               <KanbanSquare className="h-6 w-6 text-zinc-500" />
@@ -114,13 +116,16 @@ export default function BoardDetailPage({
             </p>
           </div>
         ) : (
-          // Colunas do Kanban
           <>
             {columns.map((column) => (
-              <KanbanColumnComponent key={column.id} column={column} />
+              <KanbanColumnComponent
+                key={column.id}
+                boardId={boardId}
+                column={column}
+                onOpenCard={handleOpenCard}
+              />
             ))}
 
-            {/* Botão para adicionar nova coluna */}
             <button
               type="button"
               className="flex h-fit min-w-[272px] items-center gap-2 rounded-3xl border border-dashed border-zinc-300 bg-white/60 px-5 py-4 text-sm text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-white hover:text-zinc-700"
@@ -131,16 +136,54 @@ export default function BoardDetailPage({
           </>
         )}
       </div>
+
+      <CardDetailsDialog
+        boardId={boardId}
+        cardId={selectedCardId}
+        listId={selectedListId}
+        open={!!selectedCardId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedCardId(null)
+            setSelectedListId(null)
+          }
+        }}
+      />
     </div>
   )
 }
 
-// ─── Sub-components locais ────────────────────────────────────────────────────
+function KanbanColumnComponent({
+  boardId,
+  column,
+  onOpenCard,
+}: {
+  boardId: string
+  column: KanbanColumn
+  onOpenCard: (cardId: string, listId: string) => void
+}) {
+  const [creating, setCreating] = useState(false)
+  const [title, setTitle] = useState('')
+  const mutation = useCreateCard(boardId, column.id)
 
-function KanbanColumnComponent({ column }: { column: KanbanColumn }) {
+  async function handleCreateCard() {
+    if (!title.trim()) return
+
+    await mutation.mutateAsync({
+      title: title.trim(),
+      list_id: column.id,
+      description: null,
+      priority: 'medium',
+      due_date: null,
+      assignee_id: null,
+    })
+
+    setTitle('')
+    setCreating(false)
+  }
+
   return (
     <div className="flex h-fit min-w-[272px] max-w-[272px] flex-col rounded-3xl border border-zinc-200 bg-white shadow-sm">
-      {/* Header da coluna */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-zinc-800">
@@ -150,9 +193,11 @@ function KanbanColumnComponent({ column }: { column: KanbanColumn }) {
             {column.cards.length}
           </span>
         </div>
+
         <div className="flex items-center gap-1">
           <button
             type="button"
+            onClick={() => setCreating(true)}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -166,7 +211,6 @@ function KanbanColumnComponent({ column }: { column: KanbanColumn }) {
         </div>
       </div>
 
-      {/* Cards */}
       <div className="flex flex-col gap-2 px-3 pb-3">
         {column.cards.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-200 py-6 text-center text-xs text-zinc-400">
@@ -174,21 +218,73 @@ function KanbanColumnComponent({ column }: { column: KanbanColumn }) {
           </div>
         ) : (
           column.cards
+            .slice()
             .sort((a, b) => a.position - b.position)
-            .map((card) => <KanbanCard key={card.id} card={card} />)
+            .map((card) => (
+              <KanbanCard
+                key={card.id}
+                card={card}
+                onClick={() => onOpenCard(card.id, column.id)}
+              />
+            ))
+        )}
+
+        {creating && (
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-2">
+            <Input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Digite o título do card..."
+              className="h-10 rounded-xl border-zinc-200 bg-white"
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  await handleCreateCard()
+                }
+
+                if (e.key === 'Escape') {
+                  setCreating(false)
+                  setTitle('')
+                }
+              }}
+            />
+            <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400">
+              <span>Enter para criar</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreating(false)
+                  setTitle('')
+                }}
+                className="text-zinc-500 hover:text-zinc-700"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-function KanbanCard({ card }: { card: CardListItem }) {
+function KanbanCard({
+  card,
+  onClick,
+}: {
+  card: CardListItem
+  onClick: () => void
+}) {
   const isOverdue =
     card.due_date !== null && new Date(card.due_date) < new Date()
 
   return (
-    <div className="group cursor-pointer rounded-2xl border border-zinc-100 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-200 hover:shadow-md">
-      {/* Badge de prioridade */}
+    <button
+      type="button"
+      onClick={onClick}
+      className="group w-full rounded-2xl border border-zinc-100 bg-white p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-200 hover:shadow-md"
+    >
       <div className="mb-2">
         <Badge
           variant="outline"
@@ -198,19 +294,16 @@ function KanbanCard({ card }: { card: CardListItem }) {
         </Badge>
       </div>
 
-      {/* Título */}
       <p className="line-clamp-2 text-sm font-medium text-zinc-800">
         {card.title}
       </p>
 
-      {/* Descrição */}
       {card.description && (
         <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
           {card.description}
         </p>
       )}
 
-            {/* Rodapé do card */}
       {card.due_date && (
         <div
           className={`mt-3 flex items-center gap-1.5 border-t border-zinc-100 pt-2 text-xs ${
@@ -222,7 +315,7 @@ function KanbanCard({ card }: { card: CardListItem }) {
           {isOverdue && <AlertCircle className="ml-auto h-3 w-3" />}
         </div>
       )}
-    </div>
+    </button>
   )
 }
 

@@ -25,7 +25,6 @@ async function apiFetch<T>(path: string, accessToken: string): Promise<T> {
   return result as T
 }
 
-// GET /boards/{board_id}/lists — retorna list[ListResponse] (array direto)
 export async function getListsByBoard(
   boardId: string,
   accessToken: string

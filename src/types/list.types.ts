@@ -1,4 +1,3 @@
-// Espelha ListResponse do schemas.py
 export interface ListApiItem {
   id: string
   name: string
@@ -9,7 +8,6 @@ export interface ListApiItem {
 
 export type ListItem = ListApiItem
 
-// Shape de uma coluna com seus cards já carregados — usado na UI do Kanban
 export interface KanbanColumn {
   id: string
   name: string

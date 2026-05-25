@@ -7,7 +7,6 @@ import { getListsByBoard } from '@/services/lists.service'
 import { getCardsByList } from '@/services/cards.service'
 import { KanbanColumn } from '@/types/list.types'
 
-// Busca o board específico pelo id a partir da lista de boards do usuário
 export function useBoard(boardId: string) {
   const { data: session } = useSession()
 
@@ -23,7 +22,6 @@ export function useBoard(boardId: string) {
   })
 }
 
-// Busca as listas (colunas) de um board
 export function useLists(boardId: string) {
   const { data: session } = useSession()
 
@@ -34,7 +32,6 @@ export function useLists(boardId: string) {
   })
 }
 
-// Orquestra board + listas + cards de cada lista → monta KanbanColumn[]
 export function useBoardDetail(boardId: string) {
   const { data: session } = useSession()
 
@@ -43,7 +40,6 @@ export function useBoardDetail(boardId: string) {
 
   const lists = listsQuery.data ?? []
 
-  // Para cada lista, dispara uma query independente para seus cards
   const cardQueries = useQueries({
     queries: lists.map((list) => ({
       queryKey: ['cards', 'list', list.id],
@@ -62,7 +58,6 @@ export function useBoardDetail(boardId: string) {
     listsQuery.error ||
     cardQueries.find((q) => q.error)?.error
 
-  // Monta o array de colunas com cards
   const columns: KanbanColumn[] = lists
     .map((list, index) => ({
       ...list,
