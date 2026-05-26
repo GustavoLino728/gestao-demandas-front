@@ -13,23 +13,27 @@ export function useMoveCard(boardId: string) {
     mutationFn: ({
       cardId,
       payload,
-      fromListId,
-      toListId,
     }: {
       cardId: string
       payload: CardMovePayload
       fromListId: string
       toListId: string
-    }) =>
-      moveCard(cardId, payload, session?.accessToken ?? ''),
+    }) => moveCard(cardId, payload, session?.accessToken ?? ''),
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({
-        queryKey: ['cards', 'list', variables.fromListId],
-      })
-      await queryClient.invalidateQueries({
-        queryKey: ['cards', 'list', variables.toListId],
-      })
-      await queryClient.invalidateQueries({ queryKey: ['boards', boardId] })
-    },
+        await queryClient.invalidateQueries({
+            queryKey: ['cards', 'list', variables.fromListId],
+        })
+        await queryClient.invalidateQueries({
+            queryKey: ['cards', 'list', variables.toListId],
+        })
+        await queryClient.invalidateQueries({ queryKey: ['boards', boardId] })
+
+        await queryClient.refetchQueries({
+            queryKey: ['cards', 'list', variables.fromListId],
+        })
+        await queryClient.refetchQueries({
+            queryKey: ['cards', 'list', variables.toListId],
+        })
+        },
   })
 }
