@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState, useCallback, useEffect, useMemo } from 'react'
+import { use, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -37,7 +37,6 @@ import { CardDetailsDialog } from '@/components/boards/CardDetailsDialog'
 import type { CardListItem, CardPriority } from '@/types/card.types'
 import type { KanbanColumn } from '@/types/list.types'
 
-
 const priorityLabel: Record<CardPriority, string> = {
   low: 'Baixa',
   medium: 'Média',
@@ -52,7 +51,6 @@ const priorityClasses: Record<CardPriority, string> = {
   urgent: 'border-red-200 bg-red-50 text-red-700',
 }
 
-
 export default function BoardDetailPage({
   params,
 }: {
@@ -62,17 +60,11 @@ export default function BoardDetailPage({
   const { board, columns, isLoading, error } = useBoardDetail(boardId)
 
   const [localColumns, setLocalColumns] = useState<KanbanColumn[] | null>(null)
-
-  const activeColumns = localColumns ?? columns
-
   const [activeCard, setActiveCard] = useState<CardListItem | null>(null)
-
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
-  const [dragOriginColumnId, setDragOriginColumnId] = useState<string | null>(null)
 
   const moveMutation = useMoveCard(boardId)
-
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -80,121 +72,144 @@ export default function BoardDetailPage({
     })
   )
 
-  function findColumn(cardId: string) {
-    return syncedColumns.find((col) =>
-      col.cards.some((c) => c.id === cardId)
-    )
+  const activeColumns = localColumns ?? columns
+
+  function cloneColumns(baseColumns: KanbanColumn[]) {
+    return baseColumns.map((col) => ({
+      ...col,
+      cards: [...col.cards],
+    }))
   }
 
   function handleDragStart(event: DragStartEvent) {
-    const card = localColumns
+    const baseColumns = localColumns ?? columns
+
+    const card = baseColumns
       .flatMap((col) => col.cards)
       .find((c) => c.id === event.active.id)
 
     setActiveCard(card ?? null)
+
+    if (!localColumns) {
+      setLocalColumns(cloneColumns(columns))
+    }
   }
 
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const sourceColumnIndex = localColumns.findIndex((col) =>
-      col.cards.some((card) => card.id === active.id)
-    )
-    if (sourceColumnIndex === -1) return
-
-    const targetColumn = getTargetColumn(String(over.id), localColumns)
-    if (!targetColumn) return
-
-    const targetColumnIndex = localColumns.findIndex(
-      (col) => col.id === targetColumn.id
-    )
-    if (targetColumnIndex === -1) return
-
-    const sourceColumn = localColumns[sourceColumnIndex]
-    const movingCard = sourceColumn.cards.find((card) => card.id === active.id)
-    if (!movingCard) return
-
-    if (sourceColumn.id === targetColumn.id) return
-
     setLocalColumns((prev) => {
-      const next = prev.map((col) => ({
-        ...col,
-        cards: [...col.cards],
-      }))
+      const base = cloneColumns(prev ?? columns)
 
-      next[sourceColumnIndex].cards = next[sourceColumnIndex].cards.filter(
+      const sourceColumnIndex = base.findIndex((col) =>
+        col.cards.some((card) => card.id === active.id)
+      )
+      if (sourceColumnIndex === -1) return base
+
+      const sourceColumn = base[sourceColumnIndex]
+      const movingCard = sourceColumn.cards.find((card) => card.id === active.id)
+      if (!movingCard) return base
+
+      const targetColumn = getTargetColumn(String(over.id), base)
+      if (!targetColumn) return base
+
+      const targetColumnIndex = base.findIndex((col) => col.id === targetColumn.id)
+      if (targetColumnIndex === -1) return base
+
+      const targetColumnCards = [...base[targetColumnIndex].cards]
+      const overId = String(over.id)
+
+      base[sourceColumnIndex].cards = base[sourceColumnIndex].cards.filter(
         (card) => card.id !== active.id
       )
 
-      const alreadyExists = next[targetColumnIndex].cards.some(
-        (card) => card.id === active.id
+      const cleanedTargetCards = targetColumnCards.filter(
+        (card) => card.id !== active.id
       )
 
-      if (!alreadyExists) {
-        next[targetColumnIndex].cards.push({
-          ...movingCard,
-          list_id: targetColumn.id,
-        })
+      let targetIndex = cleanedTargetCards.findIndex((card) => card.id === overId)
+
+      if (overId.startsWith('empty-')) {
+        targetIndex = 0
       }
 
-      return next
+      if (targetIndex < 0) {
+        targetIndex = cleanedTargetCards.length
+      }
+
+      cleanedTargetCards.splice(targetIndex, 0, {
+        ...movingCard,
+        list_id: targetColumn.id,
+        position: targetIndex,
+      })
+
+      base[targetColumnIndex].cards = cleanedTargetCards.map((card, index) => ({
+        ...card,
+        position: index,
+      }))
+
+      base[sourceColumnIndex].cards = base[sourceColumnIndex].cards.map(
+        (card, index) => ({
+          ...card,
+          position: index,
+        })
+      )
+
+      return base
     })
   }
 
-function handleDragEnd(event: DragEndEvent) {
-  const { active, over } = event
-  setActiveCard(null)
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveCard(null)
 
-  if (!over) {
-    setLocalColumns(columns)
-    return
-  }
+    const baseColumns = localColumns ?? columns
 
-  const fromCol = localColumns.find((col) =>
-    col.cards.some((c) => c.id === active.id)
-  )
-
-  if (!fromCol) {
-    setLocalColumns(columns)
-    return
-  }
-
-  const toCol = getTargetColumn(String(over.id), localColumns) ?? fromCol
-
-  const targetCards = toCol.cards
-    .filter((c) => c.id !== active.id)
-    .sort((a, b) => a.position - b.position)
-
-  let newPosition = targetCards.findIndex((c) => c.id === over.id)
-
-  if (String(over.id).startsWith('empty-')) {
-    newPosition = 0
-  }
-
-  if (newPosition < 0) {
-    newPosition = targetCards.length
-  }
-
-  moveMutation.mutate(
-    {
-      cardId: String(active.id),
-      payload: {
-        list_id: toCol.id,
-        position: newPosition,
-      },
-      fromListId: fromCol.id,
-      toListId: toCol.id,
-    },
-    {
-      onSuccess: () => {
-      },
-      onError: () => {
-        setLocalColumns(columns)
-      },
+    if (!over) {
+      setLocalColumns(null)
+      return
     }
-  )
-}
+
+    const toCol = getTargetColumn(String(over.id), baseColumns)
+    if (!toCol) {
+      setLocalColumns(null)
+      return
+    }
+
+    const movedCard = baseColumns
+      .flatMap((col) => col.cards)
+      .find((card) => card.id === active.id)
+
+    if (!movedCard) {
+      setLocalColumns(null)
+      return
+    }
+
+    const fromCol =
+      columns.find((col) => col.cards.some((c) => c.id === active.id)) ?? toCol
+
+    moveMutation.mutate(
+      {
+        cardId: String(active.id),
+        payload: {
+          list_id: toCol.id,
+          position: movedCard.position,
+        },
+        fromListId: fromCol.id,
+        toListId: toCol.id,
+      },
+      {
+        onSuccess: () => {
+          setLocalColumns(null)
+        },
+        onError: () => {
+          setLocalColumns(null)
+        },
+      }
+    )
+  }
+
   function handleOpenCard(cardId: string, listId: string) {
     setSelectedCardId(cardId)
     setSelectedListId(listId)
@@ -202,7 +217,6 @@ function handleDragEnd(event: DragEndEvent) {
 
   return (
     <div className="flex h-screen flex-col bg-[#f7f7f8]">
-      {/* Header */}
       <div className="border-b border-zinc-200 bg-white">
         <div className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-4">
@@ -248,7 +262,6 @@ function handleDragEnd(event: DragEndEvent) {
         </div>
       )}
 
-      {/* Kanban */}
       <div className="flex flex-1 gap-4 overflow-x-auto p-6">
         {isLoading ? (
           <>
@@ -285,11 +298,8 @@ function handleDragEnd(event: DragEndEvent) {
               />
             ))}
 
-            {/* Overlay do card sendo arrastado */}
             <DragOverlay>
-              {activeCard ? (
-                <KanbanCardOverlay card={activeCard} />
-              ) : null}
+              {activeCard ? <KanbanCardOverlay card={activeCard} /> : null}
             </DragOverlay>
 
             <button
@@ -319,7 +329,6 @@ function handleDragEnd(event: DragEndEvent) {
   )
 }
 
-
 function KanbanColumnComponent({
   boardId,
   column,
@@ -339,6 +348,7 @@ function KanbanColumnComponent({
 
   async function handleCreateCard() {
     if (!title.trim()) return
+
     await mutation.mutateAsync({
       title: title.trim(),
       list_id: column.id,
@@ -347,6 +357,7 @@ function KanbanColumnComponent({
       due_date: null,
       assignee_id: null,
     })
+
     setTitle('')
     setCreating(false)
   }
@@ -357,7 +368,6 @@ function KanbanColumnComponent({
       strategy={verticalListSortingStrategy}
     >
       <div className="flex h-fit min-w-[272px] max-w-[272px] flex-col rounded-3xl border border-zinc-200 bg-white shadow-sm">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-zinc-800">
@@ -385,7 +395,6 @@ function KanbanColumnComponent({
           </div>
         </div>
 
-        {/* Cards */}
         <div className="flex flex-col gap-2 px-3 pb-3">
           {sortedCards.length === 0 && !creating ? (
             <DroppableEmptyColumn columnId={column.id} />
@@ -412,6 +421,7 @@ function KanbanColumnComponent({
                     e.preventDefault()
                     await handleCreateCard()
                   }
+
                   if (e.key === 'Escape') {
                     setCreating(false)
                     setTitle('')
@@ -491,7 +501,7 @@ function SortableCard({
       style={style}
       {...attributes}
       {...listeners}
-      onClick={(e) => {
+      onClick={() => {
         if (!isDragging) onClick()
       }}
       className="group w-full rounded-2xl border border-zinc-100 bg-white p-3 text-left shadow-sm transition-shadow hover:-translate-y-0.5 hover:border-zinc-200 hover:shadow-md"
@@ -530,7 +540,6 @@ function SortableCard({
   )
 }
 
-
 function KanbanCardOverlay({ card }: { card: CardListItem }) {
   const isOverdue =
     card.due_date !== null && new Date(card.due_date) < new Date()
@@ -545,9 +554,11 @@ function KanbanCardOverlay({ card }: { card: CardListItem }) {
           {priorityLabel[card.priority]}
         </Badge>
       </div>
+
       <p className="line-clamp-2 text-sm font-medium text-zinc-800">
         {card.title}
       </p>
+
       {card.due_date && (
         <div
           className={`mt-3 flex items-center gap-1.5 border-t border-zinc-100 pt-2 text-xs ${
@@ -562,7 +573,6 @@ function KanbanCardOverlay({ card }: { card: CardListItem }) {
   )
 }
 
-
 function ColumnSkeleton() {
   return (
     <div className="flex h-fit min-w-[272px] max-w-[272px] flex-col rounded-3xl border border-zinc-200 bg-white shadow-sm">
@@ -571,6 +581,7 @@ function ColumnSkeleton() {
           <div className="h-4 w-28 rounded bg-zinc-200" />
         </div>
       </div>
+
       <div className="flex flex-col gap-2 px-3 pb-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div
@@ -606,6 +617,7 @@ function getTargetColumn(overId: string, columns: KanbanColumn[]) {
 function formatDate(date: string) {
   const parsed = new Date(date)
   if (Number.isNaN(parsed.getTime())) return '--'
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',

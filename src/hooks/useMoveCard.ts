@@ -19,21 +19,27 @@ export function useMoveCard(boardId: string) {
       fromListId: string
       toListId: string
     }) => moveCard(cardId, payload, session?.accessToken ?? ''),
-    onSuccess: async (_, variables) => {
-        await queryClient.invalidateQueries({
-            queryKey: ['cards', 'list', variables.fromListId],
-        })
-        await queryClient.invalidateQueries({
-            queryKey: ['cards', 'list', variables.toListId],
-        })
-        await queryClient.invalidateQueries({ queryKey: ['boards', boardId] })
 
-        await queryClient.refetchQueries({
-            queryKey: ['cards', 'list', variables.fromListId],
-        })
-        await queryClient.refetchQueries({
-            queryKey: ['cards', 'list', variables.toListId],
-        })
-        },
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: ['cards', 'list', variables.fromListId],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['cards', 'list', variables.toListId],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['boards', boardId],
+      })
+
+      await queryClient.refetchQueries({
+        queryKey: ['cards', 'list', variables.fromListId],
+      })
+      await queryClient.refetchQueries({
+        queryKey: ['cards', 'list', variables.toListId],
+      })
+      await queryClient.refetchQueries({
+        queryKey: ['boards', boardId],
+      })
+    },
   })
 }
