@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -9,6 +9,8 @@ import {
   MoreHorizontal,
   Clock,
   AlertCircle,
+  Pencil, 
+  Trash2
 } from 'lucide-react'
 import {
   DndContext,
@@ -26,6 +28,22 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +51,9 @@ import { Input } from '@/components/ui/input'
 import { useBoardDetail } from '@/hooks/useBoardDetail'
 import { useCreateCard } from '@/hooks/useCreateCard'
 import { useMoveCard } from '@/hooks/useMoveCard'
+import { useUpdateList } from '@/hooks/useUpdateList'
+import { useDeleteList } from '@/hooks/useDeleteList'
+import { useCreateList } from '@/hooks/useCreateList'
 import { CardDetailsDialog } from '@/components/boards/CardDetailsDialog'
 import type { CardListItem, CardPriority } from '@/types/card.types'
 import type { KanbanColumn } from '@/types/list.types'
@@ -63,6 +84,10 @@ export default function BoardDetailPage({
   const [activeCard, setActiveCard] = useState<CardListItem | null>(null)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
+  const [creatingList, setCreatingList] = useState(false)
+  const [newListName, setNewListName] = useState('')
+
+  const createListMutation = useCreateList(boardId)
 
   const moveMutation = useMoveCard(boardId)
 
@@ -215,6 +240,22 @@ export default function BoardDetailPage({
     setSelectedListId(listId)
   }
 
+  async function handleCreateList() {
+    const nextName = newListName.trim()
+
+    if (!nextName) return
+
+    await createListMutation.mutateAsync({
+      payload: {
+        name: nextName,
+        position: activeColumns.length,
+      },
+    })
+
+    setNewListName('')
+    setCreatingList(false)
+  }
+
   return (
     <div className="flex h-screen flex-col bg-[#f7f7f8]">
       <div className="border-b border-zinc-200 bg-white">
@@ -247,6 +288,10 @@ export default function BoardDetailPage({
           <div className="flex items-center gap-2">
             <Button
               type="button"
+              onClick={() => {
+                setCreatingList(true)
+                setNewListName('')
+              }}
               className="h-9 rounded-xl bg-red-600 px-4 text-sm text-white hover:bg-red-700"
             >
               <Plus className="mr-2 h-3.5 w-3.5" />
@@ -302,13 +347,55 @@ export default function BoardDetailPage({
               {activeCard ? <KanbanCardOverlay card={activeCard} /> : null}
             </DragOverlay>
 
-            <button
-              type="button"
-              className="flex h-fit min-w-[272px] items-center gap-2 rounded-3xl border border-dashed border-zinc-300 bg-white/60 px-5 py-4 text-sm text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-white hover:text-zinc-700"
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar lista
-            </button>
+            {creatingList ? (
+              <div className="h-fit min-w-[272px] rounded-3xl border border-zinc-200 bg-white p-3 shadow-sm">
+                <Input
+                  autoFocus
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="Digite o nome da lista..."
+                  className="h-10 rounded-xl border-zinc-200 bg-white"
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      await handleCreateList()
+                    }
+
+                    if (e.key === 'Escape') {
+                      setCreatingList(false)
+                      setNewListName('')
+                    }
+                  }}
+                  disabled={createListMutation.isPending}
+                />
+
+                <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Enter para criar · Esc para cancelar</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatingList(false)
+                      setNewListName('')
+                    }}
+                    className="text-zinc-500 hover:text-zinc-700"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatingList(true)
+                  setNewListName('')
+                }}
+                className="flex h-fit min-w-[272px] items-center gap-2 rounded-3xl border border-dashed border-zinc-300 bg-white/60 px-5 py-4 text-sm text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-white hover:text-zinc-700"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar lista
+              </button>
+            )}
           </DndContext>
         )}
       </div>
@@ -340,7 +427,13 @@ function KanbanColumnComponent({
 }) {
   const [creating, setCreating] = useState(false)
   const [title, setTitle] = useState('')
-  const mutation = useCreateCard(boardId, column.id)
+  const [editingListName, setEditingListName] = useState(false)
+  const [listName, setListName] = useState(column.name)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const createCardMutation = useCreateCard(boardId, column.id)
+  const updateListMutation = useUpdateList(boardId)
+  const deleteListMutation = useDeleteList(boardId)
 
   const sortedCards = column.cards
     .slice()
@@ -349,7 +442,7 @@ function KanbanColumnComponent({
   async function handleCreateCard() {
     if (!title.trim()) return
 
-    await mutation.mutateAsync({
+    await createCardMutation.mutateAsync({
       title: title.trim(),
       list_id: column.id,
       description: null,
@@ -362,6 +455,45 @@ function KanbanColumnComponent({
     setCreating(false)
   }
 
+  async function handleRenameList() {
+    const nextName = listName.trim()
+
+    if (!nextName) {
+      setListName(column.name)
+      setEditingListName(false)
+      return
+    }
+
+    if (nextName === column.name) {
+      setEditingListName(false)
+      return
+    }
+
+    try {
+      await updateListMutation.mutateAsync({
+        listId: column.id,
+        payload: {
+          name: nextName,
+        },
+      })
+      setEditingListName(false)
+    } catch {
+      setListName(column.name)
+      setEditingListName(false)
+    }
+  }
+
+  async function handleDeleteList() {
+    try {
+      await deleteListMutation.mutateAsync({
+        listId: column.id,
+      })
+      setDeleteOpen(false)
+    } catch {
+      setDeleteOpen(false)
+    }
+  }
+
   return (
     <SortableContext
       items={sortedCards.map((c) => c.id)}
@@ -369,10 +501,37 @@ function KanbanColumnComponent({
     >
       <div className="flex h-fit min-w-[272px] max-w-[272px] flex-col rounded-3xl border border-zinc-200 bg-white shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-zinc-800">
-              {column.name}
-            </span>
+          <div className="flex min-w-0 items-center gap-2">
+            {editingListName ? (
+              <Input
+                autoFocus
+                value={listName}
+                onChange={(e) => setListName(e.target.value)}
+                className="h-8 rounded-lg border-zinc-200 bg-white text-sm font-semibold text-zinc-800"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    await handleRenameList()
+                  }
+
+                  if (e.key === 'Escape') {
+                    setListName(column.name)
+                    setEditingListName(false)
+                  }
+                }}
+                onBlur={async () => {
+                  if (editingListName) {
+                    await handleRenameList()
+                  }
+                }}
+                disabled={updateListMutation.isPending}
+              />
+            ) : (
+              <span className="truncate text-sm font-semibold text-zinc-800">
+                {column.name}
+              </span>
+            )}
+
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-zinc-100 px-1.5 text-xs font-medium text-zinc-500">
               {column.cards.length}
             </span>
@@ -386,12 +545,38 @@ function KanbanColumnComponent({
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
-            <button
-              type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setListName(column.name)
+                    setEditingListName(true)
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar lista
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setDeleteOpen(true)}
+                  className="cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Deletar lista
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -427,7 +612,9 @@ function KanbanColumnComponent({
                     setTitle('')
                   }
                 }}
+                disabled={createCardMutation.isPending}
               />
+
               <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400">
                 <span>Enter para criar · Esc para cancelar</span>
                 <button
@@ -444,6 +631,34 @@ function KanbanColumnComponent({
             </div>
           )}
         </div>
+
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent className="rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deletar lista</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja deletar a lista "{column.name}"? Essa ação
+                não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteListMutation.isPending}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async (e) => {
+                  e.preventDefault()
+                  await handleDeleteList()
+                }}
+                disabled={deleteListMutation.isPending}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                {deleteListMutation.isPending ? 'Deletando...' : 'Deletar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </SortableContext>
   )
