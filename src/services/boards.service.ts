@@ -24,7 +24,6 @@ function normalizeStatus(status?: string): 'active' | 'archived' | 'draft' {
 
 export async function getBoards(accessToken: string): Promise<BoardListItem[]> {
   const url = `${API_URL}/api/v1/boards`
-  console.log('GET BOARDS URL =>', url)
 
   const response = await fetch(url, {
     method: 'GET',

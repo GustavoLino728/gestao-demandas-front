@@ -18,11 +18,13 @@ import { Separator } from '@/components/ui/separator'
 import { loginSchema, type LoginFormData } from '@/features/auth/schemas'
 
 export default function LoginPage() {
+
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const justRegistered = searchParams.get('registered') === 'true'
   const callbackUrl = searchParams.get('callbackUrl') || '/boards'
+  const sessionError = searchParams.get('error')
 
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -47,10 +49,11 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      })
+          email:      data.email,
+          password:   data.password,
+          rememberMe: String(rememberMe),
+          redirect:   false,
+        })
 
       if (!result) {
         setServerError('Não foi possível iniciar a autenticação.')
@@ -96,6 +99,14 @@ export default function LoginPage() {
       {serverError && (
         <Alert variant="destructive">
           <AlertDescription>{serverError}</AlertDescription>
+        </Alert>
+      )}
+
+      {sessionError === 'SessionExpired' && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Sua sessão expirou. Por favor, faça login novamente.
+          </AlertDescription>
         </Alert>
       )}
 
