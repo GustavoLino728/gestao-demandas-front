@@ -1,17 +1,17 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import { updateCard } from '@/services/cards.service'
 import type { CardUpdatePayload } from '@/types/card.types'
 
 export function useUpdateCard(boardId: string, cardId: string, listId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (payload: CardUpdatePayload) =>
-      updateCard(cardId, payload, session?.accessToken ?? ''),
+      updateCard(cardId, payload, token!),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['cards', 'list', listId] })
       await queryClient.invalidateQueries({ queryKey: ['card-detail', cardId] })

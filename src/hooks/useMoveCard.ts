@@ -1,12 +1,12 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import { moveCard } from '@/services/cards.service'
 import type { CardMovePayload } from '@/types/card.types'
 
 export function useMoveCard(boardId: string) {
-  const { data: session } = useSession()
+  const token       = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -14,32 +14,16 @@ export function useMoveCard(boardId: string) {
       cardId,
       payload,
     }: {
-      cardId: string
-      payload: CardMovePayload
-      fromListId: string
-      toListId: string
-    }) => moveCard(cardId, payload, session?.accessToken ?? ''),
+      cardId:       string
+      payload:      CardMovePayload
+      fromListId:   string
+      toListId:     string
+    }) => moveCard(cardId, payload, token!),
 
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({
-        queryKey: ['cards', 'list', variables.fromListId],
-      })
-      await queryClient.invalidateQueries({
-        queryKey: ['cards', 'list', variables.toListId],
-      })
-      await queryClient.invalidateQueries({
-        queryKey: ['boards', boardId],
-      })
-
-      await queryClient.refetchQueries({
-        queryKey: ['cards', 'list', variables.fromListId],
-      })
-      await queryClient.refetchQueries({
-        queryKey: ['cards', 'list', variables.toListId],
-      })
-      await queryClient.refetchQueries({
-        queryKey: ['boards', boardId],
-      })
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['cards', 'list', variables.fromListId] })
+      queryClient.invalidateQueries({ queryKey: ['cards', 'list', variables.toListId] })
+      queryClient.invalidateQueries({ queryKey: ['boards', boardId] })
     },
   })
 }

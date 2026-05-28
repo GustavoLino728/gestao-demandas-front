@@ -1,15 +1,15 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import { getCardById } from '@/services/cards.service'
 
 export function useCardDetail(cardId: string | null) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   return useQuery({
     queryKey: ['card-detail', cardId],
-    queryFn: () => getCardById(cardId ?? '', session?.accessToken ?? ''),
-    enabled: !!session?.accessToken && !!cardId,
+    queryFn: () => getCardById(cardId!, token!),
+    enabled: !!token && !!cardId,
   })
 }

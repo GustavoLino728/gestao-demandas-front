@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import {
   getMyCards,
   getCardsByList,
@@ -17,32 +17,31 @@ import type {
 } from '@/types/card.types'
 
 export function useCards() {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   return useQuery({
     queryKey: ['cards'],
-    queryFn: () => getMyCards(session?.accessToken ?? ''),
-    enabled: !!session?.accessToken,
+    queryFn: () => getMyCards(token!),
+    enabled: !!token,
   })
 }
 
 export function useCardsByList(listId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   return useQuery({
     queryKey: ['cards', 'list', listId],
-    queryFn: () => getCardsByList(listId, session?.accessToken ?? ''),
-    enabled: !!session?.accessToken && !!listId,
+    queryFn: () => getCardsByList(listId, token!),
+    enabled: !!token && !!listId,
   })
 }
 
 export function useCreateCard() {
-  const { data: session } = useSession()
+  const token = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: CardCreatePayload) =>
-      createCard(payload, session?.accessToken ?? ''),
+    mutationFn: (payload: CardCreatePayload) => createCard(payload, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
     },
@@ -50,12 +49,11 @@ export function useCreateCard() {
 }
 
 export function useUpdateCard(cardId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: CardUpdatePayload) =>
-      updateCard(cardId, payload, session?.accessToken ?? ''),
+    mutationFn: (payload: CardUpdatePayload) => updateCard(cardId, payload, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
     },
@@ -63,12 +61,12 @@ export function useUpdateCard(cardId: string) {
 }
 
 export function useMoveCard() {
-  const { data: session } = useSession()
+  const token = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ cardId, payload }: { cardId: string; payload: CardMovePayload }) =>
-      moveCard(cardId, payload, session?.accessToken ?? ''),
+      moveCard(cardId, payload, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
     },
@@ -76,12 +74,11 @@ export function useMoveCard() {
 }
 
 export function useDeleteCard() {
-  const { data: session } = useSession()
+  const token = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (cardId: string) =>
-      deleteCard(cardId, session?.accessToken ?? ''),
+    mutationFn: (cardId: string) => deleteCard(cardId, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards'] })
     },

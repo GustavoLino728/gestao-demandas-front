@@ -1,39 +1,39 @@
 'use client'
 
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import { getBoards } from '@/services/boards.service'
 import { getListsByBoard } from '@/services/lists.service'
 import { getCardsByList } from '@/services/cards.service'
 import { KanbanColumn } from '@/types/list.types'
 
 export function useBoard(boardId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   return useQuery({
     queryKey: ['boards', boardId],
     queryFn: async () => {
-      const boards = await getBoards(session?.accessToken ?? '')
+      const boards = await getBoards(token!)
       const board = boards.find((b) => b.id === boardId)
       if (!board) throw new Error('Board não encontrado.')
       return board
     },
-    enabled: !!session?.accessToken && !!boardId,
+    enabled: !!token && !!boardId,
   })
 }
 
 export function useLists(boardId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   return useQuery({
     queryKey: ['lists', boardId],
-    queryFn: () => getListsByBoard(boardId, session?.accessToken ?? ''),
-    enabled: !!session?.accessToken && !!boardId,
+    queryFn: () => getListsByBoard(boardId, token!),
+    enabled: !!token && !!boardId,
   })
 }
 
 export function useBoardDetail(boardId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   const boardQuery = useBoard(boardId)
   const listsQuery = useLists(boardId)
@@ -43,8 +43,8 @@ export function useBoardDetail(boardId: string) {
   const cardQueries = useQueries({
     queries: lists.map((list) => ({
       queryKey: ['cards', 'list', list.id],
-      queryFn: () => getCardsByList(list.id, session?.accessToken ?? ''),
-      enabled: !!session?.accessToken && lists.length > 0,
+      queryFn: () => getCardsByList(list.id, token!),
+      enabled: !!token && lists.length > 0,
     })),
   })
 

@@ -1,15 +1,15 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import { getBoards } from '@/services/boards.service'
 
 export function useBoards() {
-  const { data: session } = useSession()
+  const token = useAccessToken()
 
   return useQuery({
     queryKey: ['boards'],
-    queryFn: () => getBoards(session?.accessToken ?? ''),
-    enabled: !!session?.accessToken,
+    queryFn:  () => getBoards(token!),
+    enabled:  !!token,
   })
 }

@@ -1,11 +1,11 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { useAccessToken } from '@/hooks/useAccessToken'
 import { createList } from '@/services/lists.service'
 
 export function useCreateList(boardId: string) {
-  const { data: session } = useSession()
+  const token = useAccessToken()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -16,7 +16,7 @@ export function useCreateList(boardId: string) {
         name: string
         position: number
       }
-    }) => createList(boardId, payload, session?.accessToken ?? ''),
+    }) => createList(boardId, payload, token!),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({

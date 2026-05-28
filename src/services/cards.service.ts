@@ -6,6 +6,7 @@ import {
   CardUpdatePayload,
   CardMovePayload,
 } from '@/types/card.types'
+import { apiFetch } from '@/lib/api-client'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '')
 
@@ -22,36 +23,6 @@ function normalizeCard(card: CardApiItem): CardListItem {
     created_at: card.created_at ?? new Date().toISOString(),
     updated_at: card.updated_at ?? new Date().toISOString(),
   }
-}
-
-async function apiFetch<T>(
-  path: string,
-  accessToken: string,
-  options?: RequestInit
-): Promise<T> {
-  const response = await fetch(`${API_URL}/api/v1${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      ...options?.headers,
-    },
-    cache: 'no-store',
-  })
-
-  if (response.status === 204) return undefined as T
-
-  const result = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    throw new Error(
-      result?.detail ||
-      result?.message ||
-      'Erro na requisição.'
-    )
-  }
-
-  return result as T
 }
 
 export async function getMyCards(accessToken: string): Promise<CardListItem[]> {
