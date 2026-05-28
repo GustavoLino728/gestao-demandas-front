@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import {
   LayoutGrid,
   Search,
@@ -9,28 +8,13 @@ import {
   Plus,
   FolderKanban,
   KanbanSquare,
-  ArrowUpRight
+  ArrowUpRight,
 } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { useBoards } from '@/hooks/boards/useBoards'
-import { BoardListItem, BoardStatus } from '@/types/board.types'
 import { CreateBoardDialog } from '@/components/boards/CreateBoardDialog'
 import { BoardCard } from '@/components/boards/BoardCard'
-
-const statusLabel: Record<BoardStatus, string> = {
-  active: 'Ativo',
-  archived: 'Arquivado',
-  draft: 'Rascunho',
-}
-
-const statusClasses: Record<BoardStatus, string> = {
-  active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  archived: 'border-zinc-200 bg-zinc-100 text-zinc-700',
-  draft: 'border-amber-200 bg-amber-50 text-amber-700',
-}
 
 export default function BoardsPage() {
   const [openCreate, setOpenCreate] = useState(false)
@@ -39,20 +23,18 @@ export default function BoardsPage() {
 
   const filteredBoards = useMemo(() => {
     const query = search.toLowerCase().trim()
-
     if (!query) return boards
-
-    return boards.filter((board) => {
-      return (
-        board.name.toLowerCase().includes(query) ||
-        board.description?.toLowerCase().includes(query) ||
-        board.sector?.toLowerCase().includes(query)
-      )
-    })
+    return boards.filter((board) =>
+      board.name.toLowerCase().includes(query) ||
+      board.description?.toLowerCase().includes(query) ||
+      board.sector?.toLowerCase().includes(query)
+    )
   }, [boards, search])
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
+
+      {/* ── Header ─────────────────────────────────────────── */}
       <div className="border-b border-zinc-200 bg-white">
         <div className="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -93,19 +75,18 @@ export default function BoardsPage() {
               onClick={() => setOpenCreate(true)}
               className="h-11 rounded-xl bg-red-600 text-white hover:bg-red-700"
             >
-              + Novo board
+              <Plus className="mr-1.5 h-4 w-4" />
+              Novo board
             </Button>
 
-            <CreateBoardDialog
-              open={openCreate}
-              onOpenChange={setOpenCreate}
-            />
-    
+            <CreateBoardDialog open={openCreate} onOpenChange={setOpenCreate} />
           </div>
         </div>
       </div>
 
       <div className="px-6 py-6">
+
+        {/* ── Summary cards ──────────────────────────────────── */}
         <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             title="Total de boards"
@@ -115,19 +96,19 @@ export default function BoardsPage() {
           />
           <SummaryCard
             title="Boards ativos"
-            value={boards.filter((board) => board.status === 'active').length}
+            value={boards.filter((b) => b.status === 'active').length}
             helper="Em operação"
             icon={<FolderKanban className="h-4 w-4 text-emerald-600" />}
           />
           <SummaryCard
             title="Cards totais"
-            value={boards.reduce((acc, board) => acc + board.cards_count, 0)}
+            value={boards.reduce((acc, b) => acc + b.cardsCount, 0)}
             helper="Demandas consolidadas"
             icon={<KanbanSquare className="h-4 w-4 text-amber-600" />}
           />
           <SummaryCard
             title="Colunas totais"
-            value={boards.reduce((acc, board) => acc + board.columns_count, 0)}
+            value={boards.reduce((acc, b) => acc + b.columnsCount, 0)}
             helper="Estrutura dos boards"
             icon={<ArrowUpRight className="h-4 w-4 text-zinc-600" />}
           />
@@ -141,11 +122,8 @@ export default function BoardsPage() {
 
         {isLoading ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm"
-              >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
                 <div className="animate-pulse space-y-4">
                   <div className="h-4 w-24 rounded bg-zinc-200" />
                   <div className="h-6 w-3/4 rounded bg-zinc-200" />
@@ -159,6 +137,7 @@ export default function BoardsPage() {
               </div>
             ))}
           </div>
+
         ) : filteredBoards.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-14 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100">
@@ -171,6 +150,7 @@ export default function BoardsPage() {
               Ajuste a busca ou crie um novo board para começar.
             </p>
           </div>
+
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredBoards.map((board) => (
@@ -199,44 +179,9 @@ function SummaryCard({
       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50">
         {icon}
       </div>
-      <div className="text-3xl font-bold tracking-tight text-zinc-900">
-        {value}
-      </div>
+      <div className="text-3xl font-bold tracking-tight text-zinc-900">{value}</div>
       <p className="mt-1 text-sm font-medium text-zinc-700">{title}</p>
       <p className="text-xs text-zinc-500">{helper}</p>
     </div>
   )
-}
-
-function InfoMiniCard({
-  label,
-  value,
-}: {
-  label: string
-  value: number
-}) {
-  return (
-    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">
-        {label}
-      </p>
-      <p className="mt-1 text-xl font-semibold text-zinc-900">
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function formatDate(date: string) {
-  const parsed = new Date(date)
-
-  if (Number.isNaN(parsed.getTime())) {
-    return '--'
-  }
-
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(parsed)
 }

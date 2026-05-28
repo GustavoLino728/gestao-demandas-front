@@ -171,17 +171,17 @@ export function BoardCard({ board }: BoardCardProps) {
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-2xl bg-zinc-50 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Colunas</p>
-              <p className="mt-1 text-xl font-semibold text-zinc-900">{board.columns_count}</p>
+              <p className="mt-1 text-xl font-semibold text-zinc-900">{board.columnsCount}</p>
             </div>
             <div className="rounded-2xl bg-zinc-50 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Cards</p>
-              <p className="mt-1 text-xl font-semibold text-zinc-900">{board.cards_count}</p>
+              <p className="mt-1 text-xl font-semibold text-zinc-900">{board.cardsCount}</p>
             </div>
           </div>
 
           <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-4 text-xs text-zinc-500">
-            <span>Criado em {formatDate(board.created_at)}</span>
-            <span>Atualizado em {formatDate(board.updated_at)}</span>
+            <span>Criado em {formatDate(board.createdAt)}</span>
+            <span>Atualizado em {formatDate(board.updatedAt)}</span>
           </div>
         </Link>
       </div>
