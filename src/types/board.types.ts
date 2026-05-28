@@ -1,53 +1,61 @@
 export type BoardStatus = 'active' | 'archived' | 'draft'
 
-export interface BoardApiItem {
-  id: string
-  name?: string
-  title?: string
-  description?: string | null
-  sector?: string | null
-  status?: BoardStatus | string
+export interface BoardApiRaw {
+  id:             string
+  name?:          string
+  title?:         string
+  description?:   string | null
+  sector?:        string | null
+  status?:        BoardStatus | string
+
   columns_count?: number
-  cards_count?: number
-  columnsCount?: number
-  cardsCount?: number
-  created_at?: string
-  updated_at?: string
-  createdAt?: string
-  updatedAt?: string
+  columnsCount?:  number
+  cards_count?:   number
+  cardsCount?:    number
+  created_at?:    string
+  createdAt?:     string
+  updated_at?:    string
+  updatedAt?:     string
+}
+
+export type BoardApiItem = BoardApiRaw
+
+export interface BoardListItem {
+  id:           string
+  name:         string
+  description:  string | null
+  sector:       string | null
+  status:       BoardStatus
+  columnsCount: number
+  cardsCount:   number
+  createdAt:    string
+  updatedAt:    string
 }
 
 export interface BoardsApiResponse {
-  items?: BoardApiItem[]
-  data?: BoardApiItem[]
-  results?: BoardApiItem[]
-  total?: number
-  page?: number
-  size?: number
-}
-
-export interface BoardListItem {
-  id: string
-  name: string
-  description: string | null
-  sector: string | null
-  status: BoardStatus
-  columns_count: number
-  cards_count: number
-  created_at: string
-  updated_at: string
+  items?:   BoardApiRaw[]
+  data?:    BoardApiRaw[]
+  results?: BoardApiRaw[]
+  total?:   number
+  page?:    number
+  size?:    number
 }
 
 export interface CreateBoardPayload {
-  name: string
+  name:         string
+  description?: string | null
+  sector?:      string | null
+}
+
+export interface UpdateBoardPayload {
+  name?:        string
   description?: string | null
 }
 
 export interface CreateBoardResponse {
-  id: string
-  name: string
+  id:          string
+  name:        string
   description: string | null
-  owner_id: string
-  created_at: string
-  updated_at: string
+  sector:      string | null
+  status:      BoardStatus
 }

@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAccessToken } from '@/hooks/useAccessToken'
 import { updateBoard, UpdateBoardPayload } from '@/services/boards.service'
+import { queryKeys } from '@/lib/query-keys'
 
 export function useUpdateBoard() {
   const token = useAccessToken()
@@ -11,8 +12,8 @@ export function useUpdateBoard() {
   return useMutation({
     mutationFn: ({ boardId, payload }: { boardId: string; payload: UpdateBoardPayload }) =>
       updateBoard(boardId, payload, token!),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['boards'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.boards.all() })
     },
   })
 }

@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAccessToken } from '@/hooks/useAccessToken'
 import { deleteBoard } from '@/services/boards.service'
+import { queryKeys } from '@/lib/query-keys'
 
 export function useDeleteBoard() {
   const token = useAccessToken()
@@ -10,8 +11,8 @@ export function useDeleteBoard() {
 
   return useMutation({
     mutationFn: (boardId: string) => deleteBoard(boardId, token!),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['boards'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.boards.all() })
     },
   })
 }

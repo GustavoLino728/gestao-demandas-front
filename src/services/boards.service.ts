@@ -1,10 +1,11 @@
 import { apiFetch } from '@/lib/api-client'
 import {
-  BoardApiItem,
+  BoardApiRaw,
   BoardListItem,
   BoardsApiResponse,
   CreateBoardPayload,
   CreateBoardResponse,
+  UpdateBoardPayload,
 } from '@/types/board.types'
 
 function normalizeStatus(status?: string): 'active' | 'archived' | 'draft' {
@@ -13,30 +14,31 @@ function normalizeStatus(status?: string): 'active' | 'archived' | 'draft' {
   return 'active'
 }
 
-function normalizeBoard(board: BoardApiItem): BoardListItem {
+function normalizeBoard(raw: BoardApiRaw): BoardListItem {
   return {
-    id:           board.id,
-    name:         board.name ?? board.title ?? 'Board sem nome',
-    description:  board.description ?? null,
-    sector:       board.sector ?? null,
-    status:       normalizeStatus(board.status),
-    columns_count: board.columns_count ?? board.columnsCount ?? 0,
-    cards_count:   board.cards_count ?? board.cardsCount ?? 0,
-    created_at:   board.created_at ?? board.createdAt ?? new Date().toISOString(),
-    updated_at:   board.updated_at ?? board.updatedAt ?? new Date().toISOString(),
+    id:           raw.id,
+    name:         raw.name ?? raw.title ?? 'Board sem nome',
+    description:  raw.description ?? null,
+    sector:       raw.sector ?? null,
+    status:       normalizeStatus(raw.status),
+
+    columnsCount: raw.columns_count ?? raw.columnsCount ?? 0,
+    cardsCount:   raw.cards_count   ?? raw.cardsCount   ?? 0,
+    createdAt:    raw.created_at    ?? raw.createdAt    ?? new Date().toISOString(),
+    updatedAt:    raw.updated_at    ?? raw.updatedAt    ?? new Date().toISOString(),
   }
 }
 
 export async function getBoards(accessToken: string): Promise<BoardListItem[]> {
-  const payload = await apiFetch<BoardsApiResponse | BoardApiItem[]>(
+  const payload = await apiFetch<BoardsApiResponse | BoardApiRaw[]>(
     '/boards',
     accessToken
   )
 
-  if (Array.isArray(payload))          return payload.map(normalizeBoard)
-  if (Array.isArray(payload.items))    return payload.items.map(normalizeBoard)
-  if (Array.isArray(payload.data))     return payload.data.map(normalizeBoard)
-  if (Array.isArray(payload.results))  return payload.results.map(normalizeBoard)
+  if (Array.isArray(payload))         return payload.map(normalizeBoard)
+  if (Array.isArray(payload.items))   return payload.items.map(normalizeBoard)
+  if (Array.isArray(payload.data))    return payload.data.map(normalizeBoard)
+  if (Array.isArray(payload.results)) return payload.results.map(normalizeBoard)
   return []
 }
 
@@ -48,11 +50,6 @@ export async function createBoard(
     method: 'POST',
     body: JSON.stringify(payload),
   })
-}
-
-export interface UpdateBoardPayload {
-  name?: string
-  description?: string | null
 }
 
 export async function updateBoard(
