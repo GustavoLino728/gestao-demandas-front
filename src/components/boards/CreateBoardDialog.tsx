@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { useCreateBoard } from '@/hooks/useCreateBoard'
+import { useCreateBoard } from '@/hooks/boards/useCreateBoard'
 
 interface CreateBoardDialogProps {
   open: boolean

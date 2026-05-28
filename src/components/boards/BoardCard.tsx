@@ -32,8 +32,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { useDeleteBoard } from '@/hooks/useDeleteBoard'
-import { useUpdateBoard } from '@/hooks/useUpdateBoard'
+import { useDeleteBoard } from '@/hooks/boards/useDeleteBoard'
+import { useUpdateBoard } from '@/hooks/boards/useUpdateBoard'
 import { BoardListItem, BoardStatus } from '@/types/board.types'
 
 const statusLabel: Record<BoardStatus, string> = {

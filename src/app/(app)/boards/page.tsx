@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { useBoards } from '@/hooks/useBoards'
+import { useBoards } from '@/hooks/boards/useBoards'
 import { BoardListItem, BoardStatus } from '@/types/board.types'
 import { CreateBoardDialog } from '@/components/boards/CreateBoardDialog'
 import { BoardCard } from '@/components/boards/BoardCard'

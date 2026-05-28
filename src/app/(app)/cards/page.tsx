@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { useCards } from '@/hooks/useCards'
+import { useCards } from '@/hooks/cards/useCards'
 import { CardListItem, CardPriority } from '@/types/card.types'
 
 

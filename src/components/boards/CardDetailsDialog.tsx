@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { useCardDetail } from '@/hooks/useCardDetail'
-import { useUpdateCard } from '@/hooks/useUpdateCard'
+import { useCardDetail } from '@/hooks/cards/useCardDetail'
+import { useUpdateCard } from '@/hooks/cards/useUpdateCard'
 import type { CardPriority } from '@/types/card.types'
 
 interface CardDetailsDialogProps {
